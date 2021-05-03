@@ -5,12 +5,11 @@
 // autoUpdateMain.autoUpdateInit()
 
 
-import {autoUpdater, dialog} from "electron"
+import {app, autoUpdater, dialog} from "electron"
 
-// const server = 'https://update.electronjs.org'
-// const url = `${server}/lingyi1105/device-emulator/${process.platform}-${process.arch}/${app.getVersion()}`
-const server = 'https://res.ota.elinkthings.com'
-const url = `${server}/device-emulator/update/auto-update-${process.platform}.json`
+const server = 'https://update.electronjs.org'
+const url = `${server}/lingyi1105/elinkthings-checksum-tool/${process.platform}-${process.arch}/${app.getVersion()}`
+
 
 const isDev = require('electron-is-dev')
 

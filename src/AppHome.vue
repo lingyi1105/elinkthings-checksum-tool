@@ -47,47 +47,60 @@
           class="d-flex"
           cols="1"
         >
-
           <v-text-field
             readonly
             label="包头"
             :value="packageDataA6.header"
           />
-        </v-col>
-        <v-col
-          cols="1"
-        >
           <v-text-field
             readonly
-            label="length长度"
+            label="长度"
             :value="packageDataPayloadLengthA6"
           />
         </v-col>
+        <v-btn
+          color="primary"
+          fab
+          small
+          dark
+          @click="subPayloadA6"
+        >
+          <v-icon>mdi-minus-box</v-icon>
+        </v-btn>
+        <v-btn
+          color="primary"
+          fab
+          small
+          dark
+          @click="addPayloadA6"
+        >
+          <v-icon>mdi-plus-box</v-icon>
+        </v-btn>
         <v-col
-          cols="3"
+          class="d-flex"
+          cols="1"
+          v-for="(item, index) in packageDataA6.payloadList"
+          :key="index"
         >
           <v-text-field
-            v-model="packageDataA6.payload"
-            label="payload"
+            v-model="packageDataA6.payloadList[index]"
+            :label="'Payload[' + index + ']'"
             clearable
             hint="16进制格式"
-            placeholder="示例: 01 0A FF 55"
-            :rules="hexRules"
+            placeholder="示例:5A"
+            :rules="hexByteRules"
             @change="payloadChangedA6"
           />
         </v-col>
         <v-col
+          class="d-flex"
           cols="1"
         >
           <v-text-field
             readonly
-            label="sum校验和"
+            label="校验和"
             :value="packageDataChecksumA6"
           />
-        </v-col>
-        <v-col
-          cols="1"
-        >
           <v-text-field
             readonly
             label="包尾"
@@ -234,7 +247,8 @@ export default {
     packageDataA6: {
       header: 'A6',
       length: '',
-      payload: '',
+      // payload: '',
+      payloadList: [''],
       checksum: '',
       tail: '6A'
     },
@@ -256,25 +270,34 @@ export default {
         else return true
       }
     ],
+    hexByteRules: [
+      v => !!v || '不能为空',
+      v => (v && v.length === 2) || '2个字符',
+      v => {
+        let reg = /^([0-9a-f]{2})( [0-9a-f]{2})*$/i
+        if (!reg.test(v)) return '非法格式'
+        else return true
+      }
+    ],
   }),
   computed: {
     packageDataChecksumA6() {
-      // let payload = this.packageDataA6.payload.replace(/(^\s*)|(\s*$)/g, "")
-      let payload = this.packageDataA6.payload
-
-      if (!this.checkHex(payload)) {
-        // eslint-disable-next-line vue/no-side-effects-in-computed-properties
-        this.packageDataA6.checksum = ''
-        return ''
+      for (let i=0; i<this.packageDataA6.payloadList.length; i++) {
+        let payload = this.packageDataA6.payloadList[i]
+        if (!this.checkHexByte(payload)) {
+          // eslint-disable-next-line vue/no-side-effects-in-computed-properties
+          this.packageDataA6.checksum = ''
+          return ''
+        }
       }
-      let len = parseInt(this.packageDataA6.length, 16)
+
+      let len = this.packageDataA6.payloadList.length
       let sum = len
-
-
-      let arr = payload.split(' ')
+      let arr = this.packageDataA6.payloadList
       // console.log('len', len)
       // console.log('arr', arr)
       // console.log('arr.length', arr.length)
+
       for (let i=0; i<arr.length; i++) {
         sum += parseInt(arr[i], 16)
       }
@@ -321,25 +344,10 @@ export default {
       return sum
     },
     packageDataPayloadLengthA6() {
-      //去掉收尾空格
-      let payload = this.packageDataA6.payload//.replace(/(^\s*)|(\s*$)/g, "")
-      if (!this.checkHex(payload)) {
-        // eslint-disable-next-line vue/no-side-effects-in-computed-properties
-        this.packageDataA6.length = 0
-        return '00'
-      }
-      // console.log('value', value)
-      let arr = payload.split(' ')
-      // console.log('arr', arr)
-      // console.log('arr.length', arr.length)
-      if (arr.length) {
-        // eslint-disable-next-line vue/no-side-effects-in-computed-properties
-        this.packageDataA6.length = arr.length
-        return arr.length.toString(16).padStart(2, '0')
-      }
+      let length = this.packageDataA6.payloadList.length.toString(16).padStart(2, '0')
       // eslint-disable-next-line vue/no-side-effects-in-computed-properties
-      this.packageDataA6.length = 0
-      return ''
+      this.packageDataA6.length = length
+      return length
     },
     packageDataPayloadLengthA7() {
       //去掉收尾空格
@@ -371,6 +379,7 @@ export default {
 
   },
   created() {
+    this.textareaValue = this.$electronStoreGet('textareaValue')
     ipcRenderer.on('main_app_info', (event, paramCmd, param) => {
       if (paramCmd === 'app_version') {
         this.versionApp = param
@@ -392,9 +401,27 @@ export default {
       if (value.length > 40)
         return false
 
+      let reg = /^([0-9a-f]{2})( [0-9a-f]{2})*$/i
+      return reg.test(value)
+    },
+    checkHexByte(value) {
+      // console.log('checkHex()', value)
+      if (value.length !== 2)
+        return false
+      value = value.replace(/(^\s*)|(\s*$)/g, "")
+      if (!value || value.length === 0)
+        return false
 
       let reg = /^([0-9a-f]{2})( [0-9a-f]{2})*$/i
       return reg.test(value)
+    },
+    subPayloadA6() {
+      if (this.packageDataA6.payloadList.length <= 1) return
+      this.packageDataA6.payloadList.pop()
+    },
+    addPayloadA6() {
+      if (this.packageDataA6.payloadList.length >= 14) return
+      this.packageDataA6.payloadList.push('')
     },
     cidLChanged() {
       let value = this.packageDataA7.cidL.toUpperCase().replace(/(^\s*)|(\s*$)/g, "")
@@ -417,7 +444,10 @@ export default {
     copyPackageA6() {
       let value = this.packageDataA6.header
       value += ' ' + this.packageDataA6.length.toString(16).padStart(2, '0').toUpperCase()
-      value += ' ' + this.packageDataA6.payload + ' ' + this.packageDataA6.checksum + ' ' + this.packageDataA6.tail
+      for (let i=0; i<this.packageDataA6.payloadList.length; i++) {
+        value += ' ' + this.packageDataA6.payloadList[i]
+      }
+      value += ' ' + this.packageDataA6.checksum + ' ' + this.packageDataA6.tail
       this.textareaValueOutput(value, true)
       clipboard.writeText(value)
       // console.log('copyPackageA6()', clipboard.readText())
@@ -432,25 +462,22 @@ export default {
       // console.log('copyPackageA7()', clipboard.readText())
     },
     textareaValueOutput(value, newline, noTimestamp) {
+      const totalLines = 20
+      if (!this.line) this.line = 0
       if (newline) this.line++
-      if (!this.line || this.line > 1000) {
-        this.line = 0
-        // this.textareaValue = ''
-        // for (let i=0; i<800; i++) {
-        //   let n = this.textareaValue.indexOf('[', 0)
-        //   this.textareaValue = this.textareaValue.slice(n + 1)
-        // }
+      if (this.line >= totalLines) {
+        this.line = totalLines
+
         let m = this.textareaValue.length
-        let n = 0
-        for (let i=0; i<200; i++) {
-          n = this.textareaValue.lastIndexOf('\n', m)
-          m = n - 1
-        }
-        this.textareaValue = this.textareaValue.slice(n + 1)
+        let n =  this.textareaValue.lastIndexOf('\n', m)
+        this.textareaValue = this.textareaValue.slice(0, n)
       }
-      const textarea = document.getElementById('textarea');
-      textarea.scrollTop = textarea.scrollHeight;
+      // const textarea = document.getElementById('textarea');
+      // textarea.scrollTop = textarea.scrollHeight;
       this.textareaValue = (noTimestamp?'':this.$getTimeString(new Date())) + '    ' + value + (newline?'\n':'') + this.textareaValue
+
+
+      this.$electronStoreSet('textareaValue', this.textareaValue)
     },
   }
 
