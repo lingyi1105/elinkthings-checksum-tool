@@ -1,6 +1,6 @@
 {
   "name": "elinkthings-checksum-tool",
-  "version": "0.1.1",
+  "version": "0.2.1",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
@@ -17,8 +17,10 @@
   "main": "background.js",
   "dependencies": {
     "core-js": "^3.6.5",
+    "electron-builder": "^22.9.1",
     "electron-localshortcut": "^3.2.1",
     "electron-store": "^7.0.2",
+    "update-electron-app": "^2.0.1",
     "vue": "^2.6.11",
     "vuetify": "^2.4.0",
     "vuex": "^3.6.2"

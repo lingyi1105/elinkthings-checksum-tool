@@ -29,10 +29,10 @@ async function createWindow() {
     // height: 900,
     // resizable: false,
     webPreferences: {
-      
       // Use pluginOptions.nodeIntegration, leave this alone
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
       nodeIntegration: process.env.ELECTRON_NODE_INTEGRATION,
+      contextIsolation: false,
       preload: path.join(__dirname, 'preload.js')
     }
   })
@@ -117,6 +117,7 @@ if (isDevelopment) {
     })
   }
 }
+const isDev = require('electron-is-dev')
 const { ipcMain } = require('electron')
 ipcMain.on('renderer_app_info', (event, cmd) => {
   if (cmd === 'app_version') {
@@ -126,6 +127,7 @@ ipcMain.on('renderer_app_info', (event, cmd) => {
     event.reply('main_app_info', 'app_is_dev', isDev)
   }
 })
+
 
 import autoUpdateMain from './autoUpdateMain'
 autoUpdateMain.autoUpdateInit()
